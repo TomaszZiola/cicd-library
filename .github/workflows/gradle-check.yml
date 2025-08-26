@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -29,4 +29,15 @@ jobs:
 
       - name: Run Gradle check
         working-directory: ${{ inputs.working-directory }}
-        run: ./gradlew check
+        run: ./gradlew check --no-daemon --info --stacktrace
+
+      - name: Print failing tests summary
+        if: failure() || always()
+        working-directory: ${{ inputs.working-directory }}
+        shell: bash
+        run: |
+          echo "Listing failing test XMLs (if any):"
+          find build/test-results/test -name "*.xml" -print -exec grep -H 'failures="[^0]"' {} \; || true
+          echo
+          echo "Recent test log snippets (stdout/stderr if captured by Gradle):"
+          find build/test-results/test -type f \( -name "*.out" -o -name "*.txt" \) -maxdepth 1 -print -exec tail -n +1 {} \; || true
